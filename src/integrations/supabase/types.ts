@@ -9,7 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      pottery_records: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pottery_stages: {
+        Row: {
+          created_at: string | null
+          decoration: string | null
+          description: string | null
+          dimension: string | null
+          id: string
+          media_url: string | null
+          pottery_id: string
+          stage_type: string
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          decoration?: string | null
+          description?: string | null
+          dimension?: string | null
+          id?: string
+          media_url?: string | null
+          pottery_id: string
+          stage_type: string
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          decoration?: string | null
+          description?: string | null
+          dimension?: string | null
+          id?: string
+          media_url?: string | null
+          pottery_id?: string
+          stage_type?: string
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pottery_stages_pottery_id_fkey"
+            columns: ["pottery_id"]
+            isOneToOne: false
+            referencedRelation: "pottery_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,25 +1,21 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PlusCircle, User } from 'lucide-react';
+import { Home, Search, PlusCircle, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, signOut } = useAuth();
   
-  useEffect(() => {
-    // Check if user is authenticated
-    const user = localStorage.getItem('user');
-    setIsAuthenticated(!!user);
-  }, [location]);
-
   const navItems = [
     {
       icon: Home,
       label: 'Home',
-      path: isAuthenticated ? '/dashboard' : '/',
+      path: user ? '/dashboard' : '/',
       active: location.pathname === '/dashboard' || location.pathname === '/',
     },
     {
@@ -37,10 +33,14 @@ const Navigation = () => {
     {
       icon: User,
       label: 'Profile',
-      path: isAuthenticated ? '/profile' : '/login',
+      path: user ? '/profile' : '/login',
       active: location.pathname === '/profile' || location.pathname === '/login',
     },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border h-16 px-4">
@@ -58,6 +58,16 @@ const Navigation = () => {
             <span className="text-xs mt-1">{item.label}</span>
           </button>
         ))}
+        
+        {user && (
+          <button
+            onClick={handleSignOut}
+            className="flex flex-col items-center justify-center w-16 h-full text-muted-foreground"
+          >
+            <LogOut size={24} />
+            <span className="text-xs mt-1">Logout</span>
+          </button>
+        )}
       </div>
     </nav>
   );

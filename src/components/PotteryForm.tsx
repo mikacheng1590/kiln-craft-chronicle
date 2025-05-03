@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import StageForm from './StageForm';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadMedia } from '@/utils/storageUtils';
 
 interface PotteryFormProps {
   pottery?: PotteryRecord;
@@ -16,12 +19,14 @@ interface PotteryFormProps {
 
 const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [title, setTitle] = useState(pottery?.title || '');
   const [stages, setStages] = useState({
     greenware: pottery?.stages.greenware || {},
     bisque: pottery?.stages.bisque || {},
     final: pottery?.stages.final || {},
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStageChange = (stageType: StageType, data: StageData) => {
     setStages(prev => ({
@@ -30,54 +35,130 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) {
       toast.error('Please enter a title for your pottery');
       return;
     }
+
+    if (!user) {
+      toast.error('You must be logged in to save pottery records');
+      navigate('/login');
+      return;
+    }
     
-    // In a real app, we'd call the API to save the pottery record
+    setIsSubmitting(true);
+    
     try {
-      const user = localStorage.getItem('user');
-      if (!user) {
-        toast.error('You must be logged in to save pottery records');
-        navigate('/login');
-        return;
+      const potteryId = pottery?.id || uuidv4();
+      
+      // Process any file uploads and get public URLs
+      const updatedStages = { ...stages };
+      
+      for (const stageType of ['greenware', 'bisque', 'final'] as StageType[]) {
+        const stageData = stages[stageType];
+        
+        if (stageData.media instanceof File) {
+          const mediaUrl = await uploadMedia(stageData.media, user.id, `${potteryId}-${stageType}`);
+          if (mediaUrl) {
+            updatedStages[stageType] = {
+              ...stageData,
+              media: mediaUrl
+            };
+          }
+        }
       }
-      
-      const userData = JSON.parse(user);
-      
-      const potteryRecord: PotteryRecord = {
-        id: pottery?.id || uuidv4(),
-        title,
-        createdAt: pottery?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        userId: userData.id,
-        stages,
-      };
-      
-      // In a real app, this would be an API call
-      // For now, we'll simulate by storing in localStorage
-      const existingRecords = JSON.parse(localStorage.getItem('potteryRecords') || '[]');
-      
-      if (isEditing) {
-        const updatedRecords = existingRecords.map((record: PotteryRecord) => 
-          record.id === potteryRecord.id ? potteryRecord : record
-        );
-        localStorage.setItem('potteryRecords', JSON.stringify(updatedRecords));
-        toast.success('Pottery record updated successfully');
+
+      // Save pottery record to Supabase
+      if (isEditing && pottery) {
+        // Update existing pottery record
+        const { error: recordError } = await supabase
+          .from('pottery_records')
+          .update({
+            title,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', potteryId);
+
+        if (recordError) {
+          throw recordError;
+        }
       } else {
-        existingRecords.push(potteryRecord);
-        localStorage.setItem('potteryRecords', JSON.stringify(existingRecords));
-        toast.success('Pottery record created successfully');
+        // Insert new pottery record
+        const { error: recordError } = await supabase
+          .from('pottery_records')
+          .insert({
+            id: potteryId,
+            user_id: user.id,
+            title
+          });
+
+        if (recordError) {
+          throw recordError;
+        }
+      }
+
+      // Update or insert each stage
+      for (const stageType of ['greenware', 'bisque', 'final'] as StageType[]) {
+        const stageData = updatedStages[stageType];
+        
+        // Skip if no data for this stage
+        if (Object.keys(stageData).length === 0) continue;
+        
+        // Check if stage already exists
+        const { data: existingStage } = await supabase
+          .from('pottery_stages')
+          .select('id')
+          .eq('pottery_id', potteryId)
+          .eq('stage_type', stageType)
+          .single();
+        
+        if (existingStage) {
+          // Update existing stage
+          const { error: stageError } = await supabase
+            .from('pottery_stages')
+            .update({
+              weight: stageData.weight || null,
+              media_url: stageData.media || null,
+              dimension: stageData.dimension || null,
+              description: stageData.description || null,
+              decoration: stageData.decoration || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingStage.id);
+          
+          if (stageError) {
+            throw stageError;
+          }
+        } else if (Object.values(stageData).some(value => value !== undefined && value !== '')) {
+          // Insert new stage if there's actual data
+          const { error: stageError } = await supabase
+            .from('pottery_stages')
+            .insert({
+              pottery_id: potteryId,
+              stage_type: stageType,
+              weight: stageData.weight || null,
+              media_url: stageData.media || null,
+              dimension: stageData.dimension || null,
+              description: stageData.description || null,
+              decoration: stageData.decoration || null
+            });
+          
+          if (stageError) {
+            throw stageError;
+          }
+        }
       }
       
+      toast.success(isEditing ? 'Pottery record updated successfully' : 'Pottery record created successfully');
       navigate('/dashboard');
     } catch (error) {
+      console.error('Error saving pottery record:', error);
       toast.error('Failed to save pottery record');
-      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,8 +202,8 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
       </div>
       
       <div className="pt-4 pb-16">
-        <Button type="submit" className="w-full">
-          {isEditing ? 'Update Pottery Record' : 'Create Pottery Record'}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : (isEditing ? 'Update Pottery Record' : 'Create Pottery Record')}
         </Button>
       </div>
     </form>

@@ -17,7 +17,7 @@ interface StageFormProps {
 const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
   const [data, setData] = useState<StageData>(stageData || {});
   
-  const handleChange = (field: keyof StageData, value: string | number) => {
+  const handleChange = (field: keyof StageData, value: string | number | File) => {
     const updatedData = { ...data, [field]: value };
     setData(updatedData);
     onChange(type, updatedData);
@@ -79,19 +79,17 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
             accept="image/*,video/*"
             className="cursor-pointer"
             onChange={(e) => {
-              // In a real app, you'd upload this to storage and get a URL
-              // For now, we'll just use a placeholder
               if (e.target.files && e.target.files[0]) {
-                handleChange('media', URL.createObjectURL(e.target.files[0]));
+                handleChange('media', e.target.files[0]);
               }
             }}
           />
           {data.media && (
             <div className="mt-2 rounded-md overflow-hidden border">
-              {data.media.startsWith('blob:') ? (
-                <img src={data.media} alt="Preview" className="max-h-40 w-auto mx-auto" />
-              ) : (
+              {typeof data.media === 'string' ? (
                 <img src={data.media} alt="Stage media" className="max-h-40 w-auto mx-auto" />
+              ) : (
+                <div className="bg-muted p-2 text-sm">File selected: {(data.media as File).name}</div>
               )}
             </div>
           )}

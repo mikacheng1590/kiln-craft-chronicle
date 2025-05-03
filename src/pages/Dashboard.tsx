@@ -2,40 +2,87 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PotteryRecord } from '@/types';
-import { mockPotteryRecords } from '@/utils/mockData';
 import PotteryCard from '@/components/PotteryCard';
 import SearchBar from '@/components/SearchBar';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user } = useAuth();
   const [potteryRecords, setPotteryRecords] = useState<PotteryRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<PotteryRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Check if user is authenticated
-    const user = localStorage.getItem('user');
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    setIsAuthenticated(true);
+    const fetchPotteryRecords = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // Fetch pottery records
+        const { data: records, error } = await supabase
+          .from('pottery_records')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // For each record, fetch its stages
+        const recordsWithStages = await Promise.all(
+          records.map(async (record) => {
+            const { data: stagesData, error: stagesError } = await supabase
+              .from('pottery_stages')
+              .select('*')
+              .eq('pottery_id', record.id);
+            
+            if (stagesError) throw stagesError;
+            
+            // Format stages by type
+            const formattedStages = {
+              greenware: {},
+              bisque: {},
+              final: {}
+            };
+            
+            stagesData.forEach(stage => {
+              formattedStages[stage.stage_type as StageType] = {
+                weight: stage.weight,
+                media: stage.media_url,
+                dimension: stage.dimension,
+                description: stage.description,
+                decoration: stage.decoration
+              };
+            });
+            
+            return {
+              id: record.id,
+              title: record.title,
+              createdAt: record.created_at,
+              updatedAt: record.updated_at,
+              userId: record.user_id,
+              stages: formattedStages
+            };
+          })
+        );
+        
+        setPotteryRecords(recordsWithStages);
+        setFilteredRecords(recordsWithStages);
+      } catch (error) {
+        console.error('Error fetching pottery records:', error);
+        toast.error('Failed to load pottery records');
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Load pottery records from localStorage or use mock data if none exist
-    const storedRecords = localStorage.getItem('potteryRecords');
-    if (storedRecords) {
-      setPotteryRecords(JSON.parse(storedRecords));
-      setFilteredRecords(JSON.parse(storedRecords));
-    } else {
-      // Initialize with mock data for demo purposes
-      localStorage.setItem('potteryRecords', JSON.stringify(mockPotteryRecords));
-      setPotteryRecords(mockPotteryRecords);
-      setFilteredRecords(mockPotteryRecords);
-    }
-  }, [navigate]);
+    fetchPotteryRecords();
+  }, [user]);
   
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) {
@@ -63,18 +110,23 @@ const Dashboard = () => {
     setFilteredRecords(results);
   };
   
-  const handleDelete = (id: string) => {
-    setPotteryRecords((prevRecords) => 
-      prevRecords.filter((record) => record.id !== id)
-    );
-    setFilteredRecords((prevRecords) => 
-      prevRecords.filter((record) => record.id !== id)
-    );
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('pottery_records')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setPotteryRecords((prev) => prev.filter((record) => record.id !== id));
+      setFilteredRecords((prev) => prev.filter((record) => record.id !== id));
+      toast.success('Pottery record deleted successfully');
+    } catch (error) {
+      console.error('Error deleting pottery record:', error);
+      toast.error('Failed to delete pottery record');
+    }
   };
-
-  if (!isAuthenticated) {
-    return null; // Will redirect to login in useEffect
-  }
 
   return (
     <div className="flex flex-col min-h-screen pb-16">
@@ -84,7 +136,11 @@ const Dashboard = () => {
       </header>
       
       <main className="flex-1 p-4">
-        {filteredRecords.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <p>Loading your pottery records...</p>
+          </div>
+        ) : filteredRecords.length === 0 ? (
           <div className="text-center py-12">
             <h2 className="text-xl font-medium mb-4">No pottery records found</h2>
             <p className="text-muted-foreground mb-6">

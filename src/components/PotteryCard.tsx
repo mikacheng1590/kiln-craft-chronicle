@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface PotteryCardProps {
   pottery: PotteryRecord;
-  onDelete?: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
@@ -41,19 +41,7 @@ const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
 
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this pottery record?')) {
-      // In a real app, we'd call the API to delete the record
-      try {
-        // For now, we'll simulate by removing from localStorage
-        const existingRecords = JSON.parse(localStorage.getItem('potteryRecords') || '[]');
-        const updatedRecords = existingRecords.filter((record: PotteryRecord) => record.id !== id);
-        localStorage.setItem('potteryRecords', JSON.stringify(updatedRecords));
-        
-        toast.success('Pottery record deleted successfully');
-        if (onDelete) onDelete(id);
-      } catch (error) {
-        toast.error('Failed to delete pottery record');
-        console.error(error);
-      }
+      onDelete(id);
     }
   };
 
