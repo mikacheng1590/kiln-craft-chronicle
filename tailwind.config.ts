@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,22 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Pottery specific colors
+				clay: {
+					light: '#E5D3C1',
+					DEFAULT: '#C8A287',
+					dark: '#A67C5B'
+				},
+				terracotta: {
+					light: '#E8B298',
+					DEFAULT: '#D17F50',
+					dark: '#A55C2F'
+				},
+				glaze: {
+					light: '#B6D8E2',
+					DEFAULT: '#7CAFC0',
+					dark: '#4D7F91'
 				}
 			},
 			borderRadius: {
