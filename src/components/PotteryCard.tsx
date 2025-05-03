@@ -28,9 +28,9 @@ const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
   
   // Get the featured image (first available image from final, then bisque, then greenware)
   const getFeaturedImage = (): string | null => {
-    if (stages.final?.media) return stages.final.media as string;
-    if (stages.bisque?.media) return stages.bisque.media as string;
-    if (stages.greenware?.media) return stages.greenware.media as string;
+    if (stages.final?.media && typeof stages.final.media === 'string') return stages.final.media;
+    if (stages.bisque?.media && typeof stages.bisque.media === 'string') return stages.bisque.media;
+    if (stages.greenware?.media && typeof stages.greenware.media === 'string') return stages.greenware.media;
     return null;
   };
   

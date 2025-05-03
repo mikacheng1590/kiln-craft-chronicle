@@ -33,8 +33,14 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
     if (field === 'media' && value instanceof File) {
       setMediaFile(value);
       updatedData.media = URL.createObjectURL(value); // Create a temporary URL for preview
-    } else {
-      updatedData[field] = value;
+    } else if (field === 'weight' && typeof value === 'number') {
+      updatedData.weight = value;
+    } else if (typeof value === 'string') {
+      // Handle string values based on the field type
+      if (field === 'dimension') updatedData.dimension = value;
+      if (field === 'description') updatedData.description = value;
+      if (field === 'decoration') updatedData.decoration = value;
+      if (field === 'media') updatedData.media = value;
     }
     
     setData(updatedData);

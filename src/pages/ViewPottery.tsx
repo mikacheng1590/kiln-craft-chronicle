@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PotteryRecord, StageType } from '@/types';
@@ -110,6 +111,14 @@ const ViewPottery = () => {
     final: 'stage-final',
   };
 
+  // Helper function to get only string media URLs (for display)
+  const getMediaUrl = (mediaValue: string | File | undefined): string | undefined => {
+    if (typeof mediaValue === 'string') {
+      return mediaValue;
+    }
+    return undefined;
+  };
+
   return (
     <div className="flex flex-col min-h-screen pb-16">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b p-4">
@@ -144,6 +153,7 @@ const ViewPottery = () => {
           {(Object.keys(stages) as StageType[]).map((stageType) => {
             const stageData = stages[stageType];
             const hasData = Object.values(stageData || {}).some(Boolean);
+            const mediaUrl = getMediaUrl(stageData.media);
             
             return (
               <TabsContent key={stageType} value={stageType} className="mt-0">
@@ -158,10 +168,10 @@ const ViewPottery = () => {
                   <CardContent className="space-y-4">
                     {hasData ? (
                       <>
-                        {stageData.media && (
+                        {mediaUrl && (
                           <div className="rounded-md overflow-hidden border mb-4">
                             <img 
-                              src={stageData.media} 
+                              src={mediaUrl} 
                               alt={`${title} - ${stageLabels[stageType]}`} 
                               className="max-h-80 w-auto mx-auto"
                             />
