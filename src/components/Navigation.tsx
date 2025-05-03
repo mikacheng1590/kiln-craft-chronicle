@@ -33,8 +33,8 @@ const Navigation = () => {
     {
       icon: User,
       label: 'Profile',
-      path: user ? '/profile' : '/login',
-      active: location.pathname === '/profile' || location.pathname === '/login',
+      path: user ? '/profile' : '/',
+      active: location.pathname === '/profile' || location.pathname === '/',
     },
   ];
 
