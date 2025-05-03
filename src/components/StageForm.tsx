@@ -15,28 +15,35 @@ interface StageFormProps {
 }
 
 const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
-  const [data, setData] = useState<StageData & { mediaFile?: File }>(stageData || {});
+  const [data, setData] = useState<StageData>({
+    weight: stageData?.weight,
+    media: stageData?.media,
+    dimension: stageData?.dimension,
+    description: stageData?.description,
+    decoration: stageData?.decoration
+  });
+  
+  // Separate state for the media file to avoid type issues
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
   
   const handleChange = (field: keyof StageData, value: string | number | File) => {
     const updatedData = { ...data };
     
     // Handle File objects separately
     if (field === 'media' && value instanceof File) {
-      updatedData.mediaFile = value;
+      setMediaFile(value);
       updatedData.media = URL.createObjectURL(value); // Create a temporary URL for preview
     } else {
-      updatedData[field] = value as any;
+      updatedData[field] = value;
     }
     
     setData(updatedData);
     
     // Only pass the StageData compatible fields to parent
+    // If we have a File object, include it in the media field
     const stageDataToPass: StageData = {
-      weight: updatedData.weight,
-      media: updatedData.mediaFile || updatedData.media,
-      dimension: updatedData.dimension,
-      description: updatedData.description,
-      decoration: updatedData.decoration
+      ...updatedData,
+      media: field === 'media' && value instanceof File ? value : updatedData.media
     };
     
     onChange(type, stageDataToPass);
@@ -105,10 +112,11 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
           />
           {data.media && (
             <div className="mt-2 rounded-md overflow-hidden border">
-              {typeof data.media === 'string' ? (
+              {typeof data.media === 'string' && (
                 <img src={data.media} alt="Stage media" className="max-h-40 w-auto mx-auto" />
-              ) : (
-                <div className="bg-muted p-2 text-sm">File selected: {data.mediaFile?.name || 'Upload pending'}</div>
+              )}
+              {mediaFile && (
+                <div className="bg-muted p-2 text-sm">File selected: {mediaFile.name}</div>
               )}
             </div>
           )}

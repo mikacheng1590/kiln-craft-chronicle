@@ -116,18 +116,21 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
           .eq('stage_type', stageType)
           .single();
         
+        // Prepare stage data for database
+        const dbStageData = {
+          weight: stageData.weight || null,
+          media_url: typeof stageData.media === 'string' ? stageData.media : null,
+          dimension: stageData.dimension || null,
+          description: stageData.description || null,
+          decoration: stageData.decoration || null,
+          updated_at: new Date().toISOString()
+        };
+        
         if (existingStage) {
           // Update existing stage
           const { error: stageError } = await supabase
             .from('pottery_stages')
-            .update({
-              weight: stageData.weight || null,
-              media_url: stageData.media || null,
-              dimension: stageData.dimension || null,
-              description: stageData.description || null,
-              decoration: stageData.decoration || null,
-              updated_at: new Date().toISOString()
-            })
+            .update(dbStageData)
             .eq('id', existingStage.id);
           
           if (stageError) {
@@ -140,11 +143,7 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
             .insert({
               pottery_id: potteryId,
               stage_type: stageType,
-              weight: stageData.weight || null,
-              media_url: stageData.media || null,
-              dimension: stageData.dimension || null,
-              description: stageData.description || null,
-              decoration: stageData.decoration || null
+              ...dbStageData
             });
           
           if (stageError) {
