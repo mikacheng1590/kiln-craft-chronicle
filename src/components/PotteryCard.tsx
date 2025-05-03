@@ -1,11 +1,9 @@
-
 import { useNavigate } from 'react-router-dom';
 import { PotteryRecord } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface PotteryCardProps {
@@ -29,10 +27,10 @@ const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
   const completedStages = getCompletedStages();
   
   // Get the featured image (first available image from final, then bisque, then greenware)
-  const getFeaturedImage = () => {
-    if (stages.final?.media) return stages.final.media;
-    if (stages.bisque?.media) return stages.bisque.media;
-    if (stages.greenware?.media) return stages.greenware.media;
+  const getFeaturedImage = (): string | null => {
+    if (stages.final?.media) return stages.final.media as string;
+    if (stages.bisque?.media) return stages.bisque.media as string;
+    if (stages.greenware?.media) return stages.greenware.media as string;
     return null;
   };
   

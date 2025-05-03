@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PotteryRecord } from '@/types';
+import { PotteryRecord, StageType } from '@/types';
 import PotteryCard from '@/components/PotteryCard';
 import SearchBar from '@/components/SearchBar';
 import Navigation from '@/components/Navigation';

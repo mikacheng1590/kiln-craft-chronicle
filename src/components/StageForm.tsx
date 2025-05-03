@@ -15,12 +15,31 @@ interface StageFormProps {
 }
 
 const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
-  const [data, setData] = useState<StageData>(stageData || {});
+  const [data, setData] = useState<StageData & { mediaFile?: File }>(stageData || {});
   
   const handleChange = (field: keyof StageData, value: string | number | File) => {
-    const updatedData = { ...data, [field]: value };
+    const updatedData = { ...data };
+    
+    // Handle File objects separately
+    if (field === 'media' && value instanceof File) {
+      updatedData.mediaFile = value;
+      updatedData.media = URL.createObjectURL(value); // Create a temporary URL for preview
+    } else {
+      updatedData[field] = value as any;
+    }
+    
     setData(updatedData);
-    onChange(type, updatedData);
+    
+    // Only pass the StageData compatible fields to parent
+    const stageDataToPass: StageData = {
+      weight: updatedData.weight,
+      media: updatedData.mediaFile || updatedData.media,
+      dimension: updatedData.dimension,
+      description: updatedData.description,
+      decoration: updatedData.decoration
+    };
+    
+    onChange(type, stageDataToPass);
   };
 
   const stageLabels: Record<StageType, string> = {
@@ -89,7 +108,7 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
               {typeof data.media === 'string' ? (
                 <img src={data.media} alt="Stage media" className="max-h-40 w-auto mx-auto" />
               ) : (
-                <div className="bg-muted p-2 text-sm">File selected: {(data.media as File).name}</div>
+                <div className="bg-muted p-2 text-sm">File selected: {data.mediaFile?.name || 'Upload pending'}</div>
               )}
             </div>
           )}

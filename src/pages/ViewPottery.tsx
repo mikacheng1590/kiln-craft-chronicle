@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PotteryRecord, StageType } from '@/types';
@@ -8,38 +7,90 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Weight, Image } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const ViewPottery = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [pottery, setPottery] = useState<PotteryRecord | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Check if user is authenticated
-    const user = localStorage.getItem('user');
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    setIsAuthenticated(true);
-    
-    // Load pottery record
-    if (id) {
-      const storedRecords = localStorage.getItem('potteryRecords');
-      if (storedRecords) {
-        const records: PotteryRecord[] = JSON.parse(storedRecords);
-        const foundPottery = records.find(record => record.id === id);
-        if (foundPottery) {
-          setPottery(foundPottery);
-        } else {
-          navigate('/dashboard');
+    const fetchPottery = async () => {
+      if (!id || !user) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // Fetch pottery record
+        const { data: record, error } = await supabase
+          .from('pottery_records')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) {
+          if (error.code === 'PGRST116') {
+            toast.error('Pottery record not found');
+            navigate('/dashboard');
+            return;
+          }
+          throw error;
         }
+        
+        // Fetch stages for this pottery
+        const { data: stagesData, error: stagesError } = await supabase
+          .from('pottery_stages')
+          .select('*')
+          .eq('pottery_id', id);
+        
+        if (stagesError) throw stagesError;
+        
+        // Format stages by type
+        const formattedStages = {
+          greenware: {},
+          bisque: {},
+          final: {}
+        };
+        
+        stagesData.forEach(stage => {
+          formattedStages[stage.stage_type as StageType] = {
+            weight: stage.weight,
+            media: stage.media_url,
+            dimension: stage.dimension,
+            description: stage.description,
+            decoration: stage.decoration
+          };
+        });
+        
+        setPottery({
+          id: record.id,
+          title: record.title,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at,
+          userId: record.user_id,
+          stages: formattedStages
+        });
+      } catch (error) {
+        console.error('Error fetching pottery record:', error);
+        toast.error('Failed to load pottery record');
+        navigate('/dashboard');
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [id, navigate]);
-  
-  if (!isAuthenticated || !pottery) {
+    };
+    
+    fetchPottery();
+  }, [id, navigate, user]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!pottery) {
     return null;
   }
 

@@ -60,6 +60,7 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
       for (const stageType of ['greenware', 'bisque', 'final'] as StageType[]) {
         const stageData = stages[stageType];
         
+        // Check if media is a File object and upload it
         if (stageData.media instanceof File) {
           const mediaUrl = await uploadMedia(stageData.media, user.id, `${potteryId}-${stageType}`);
           if (mediaUrl) {
