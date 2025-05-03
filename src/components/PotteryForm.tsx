@@ -45,7 +45,7 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
 
     if (!user) {
       toast.error('You must be logged in to save pottery records');
-      navigate('/login');
+      navigate('/');
       return;
     }
     

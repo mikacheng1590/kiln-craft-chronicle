@@ -12,7 +12,7 @@ const CreatePottery = () => {
     // Check if user is authenticated
     const user = localStorage.getItem('user');
     if (!user) {
-      navigate('/login');
+      navigate('/');
       return;
     }
     setIsAuthenticated(true);
