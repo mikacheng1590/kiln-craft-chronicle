@@ -5,8 +5,8 @@ import { Home, Search, PlusCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navigation = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   useEffect(() => {
