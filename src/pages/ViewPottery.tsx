@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const ViewPottery = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,9 +59,22 @@ const ViewPottery = () => {
         };
         
         stagesData.forEach(stage => {
+          let mediaUrls = [];
+          try {
+            // Try to parse JSON string for media URLs
+            if (stage.media_url) {
+              mediaUrls = JSON.parse(stage.media_url);
+            }
+          } catch (e) {
+            // If not valid JSON, treat as single URL
+            if (stage.media_url) {
+              mediaUrls = [stage.media_url];
+            }
+          }
+          
           formattedStages[stage.stage_type as StageType] = {
             weight: stage.weight,
-            media: stage.media_url,
+            media: mediaUrls,
             dimension: stage.dimension,
             description: stage.description,
             decoration: stage.decoration
@@ -111,12 +125,15 @@ const ViewPottery = () => {
     final: 'stage-final',
   };
 
-  // Helper function to get only string media URLs (for display)
-  const getMediaUrl = (mediaValue: string | File | undefined): string | undefined => {
-    if (typeof mediaValue === 'string') {
-      return mediaValue;
+  // Helper function to get media URLs array
+  const getMediaUrls = (stageData: any): string[] => {
+    if (!stageData.media) return [];
+    
+    if (Array.isArray(stageData.media)) {
+      return stageData.media.filter(item => typeof item === 'string') as string[];
     }
-    return undefined;
+    
+    return typeof stageData.media === 'string' ? [stageData.media] : [];
   };
 
   return (
@@ -153,7 +170,7 @@ const ViewPottery = () => {
           {(Object.keys(stages) as StageType[]).map((stageType) => {
             const stageData = stages[stageType];
             const hasData = Object.values(stageData || {}).some(Boolean);
-            const mediaUrl = getMediaUrl(stageData.media);
+            const mediaUrls = getMediaUrls(stageData);
             
             return (
               <TabsContent key={stageType} value={stageType} className="mt-0">
@@ -168,13 +185,32 @@ const ViewPottery = () => {
                   <CardContent className="space-y-4">
                     {hasData ? (
                       <>
-                        {mediaUrl && (
-                          <div className="rounded-md overflow-hidden border mb-4">
-                            <img 
-                              src={mediaUrl} 
-                              alt={`${title} - ${stageLabels[stageType]}`} 
-                              className="max-h-80 w-auto mx-auto"
-                            />
+                        {mediaUrls.length > 0 && (
+                          <div className="rounded-md overflow-hidden mb-4">
+                            <Carousel className="w-full">
+                              <CarouselContent>
+                                {mediaUrls.map((url, idx) => (
+                                  <CarouselItem key={idx}>
+                                    <div className="p-1">
+                                      <img 
+                                        src={url} 
+                                        alt={`${title} - ${stageLabels[stageType]} (${idx + 1}/${mediaUrls.length})`}
+                                        className="rounded-md max-h-80 w-auto mx-auto object-contain"
+                                      />
+                                    </div>
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              {mediaUrls.length > 1 && (
+                                <>
+                                  <CarouselPrevious />
+                                  <CarouselNext />
+                                </>
+                              )}
+                            </Carousel>
+                            <div className="text-center text-sm text-muted-foreground mt-1">
+                              {mediaUrls.length} {mediaUrls.length === 1 ? 'image' : 'images'}
+                            </div>
                           </div>
                         )}
                         

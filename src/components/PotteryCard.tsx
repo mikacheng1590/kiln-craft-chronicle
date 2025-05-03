@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { PotteryRecord } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,9 +29,24 @@ const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
   
   // Get the featured image (first available image from final, then bisque, then greenware)
   const getFeaturedImage = (): string | null => {
-    if (stages.final?.media && typeof stages.final.media === 'string') return stages.final.media;
-    if (stages.bisque?.media && typeof stages.bisque.media === 'string') return stages.bisque.media;
-    if (stages.greenware?.media && typeof stages.greenware.media === 'string') return stages.greenware.media;
+    // Try to get the first image from the final stage
+    if (Array.isArray(stages.final?.media) && stages.final.media.length > 0) {
+      const firstMedia = stages.final.media[0];
+      if (typeof firstMedia === 'string') return firstMedia;
+    }
+    
+    // Then try bisque stage
+    if (Array.isArray(stages.bisque?.media) && stages.bisque.media.length > 0) {
+      const firstMedia = stages.bisque.media[0];
+      if (typeof firstMedia === 'string') return firstMedia;
+    }
+    
+    // Then try greenware stage
+    if (Array.isArray(stages.greenware?.media) && stages.greenware.media.length > 0) {
+      const firstMedia = stages.greenware.media[0];
+      if (typeof firstMedia === 'string') return firstMedia;
+    }
+    
     return null;
   };
   

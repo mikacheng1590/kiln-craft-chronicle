@@ -1,12 +1,12 @@
-
 import { useState } from 'react';
 import { StageData, StageType } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Weight, Image } from 'lucide-react';
+import { Weight, Image, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface StageFormProps {
   type: StageType;
@@ -17,22 +17,49 @@ interface StageFormProps {
 const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
   const [data, setData] = useState<StageData>({
     weight: stageData?.weight,
-    media: stageData?.media,
+    media: stageData?.media || [],
     dimension: stageData?.dimension,
     description: stageData?.description,
     decoration: stageData?.decoration
   });
   
-  // Separate state for the media file to avoid type issues
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  // Keep track of files selected by the user for preview
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   
-  const handleChange = (field: keyof StageData, value: string | number | File) => {
+  const handleChange = (field: keyof StageData, value: string | number | File | File[]) => {
     const updatedData = { ...data };
     
     // Handle File objects separately
-    if (field === 'media' && value instanceof File) {
-      setMediaFile(value);
-      updatedData.media = URL.createObjectURL(value); // Create a temporary URL for preview
+    if (field === 'media') {
+      if (Array.isArray(value)) {
+        // Handle multiple files
+        const newMediaFiles = [...mediaFiles, ...value];
+        setMediaFiles(newMediaFiles);
+        
+        // Create temporary URLs for preview
+        const mediaPreviews = newMediaFiles.map(file => URL.createObjectURL(file));
+        
+        // If there are existing string URLs, keep them
+        const existingUrls = Array.isArray(data.media) 
+          ? data.media.filter(item => typeof item === 'string')
+          : [];
+        
+        updatedData.media = [...existingUrls, ...newMediaFiles];
+      } else if (value instanceof File) {
+        // Handle single file
+        const newMediaFiles = [...mediaFiles, value];
+        setMediaFiles(newMediaFiles);
+        
+        // Create temporary URLs for preview
+        const mediaPreviews = newMediaFiles.map(file => URL.createObjectURL(file));
+        
+        // If there are existing string URLs, keep them
+        const existingUrls = Array.isArray(data.media) 
+          ? data.media.filter(item => typeof item === 'string')
+          : [];
+        
+        updatedData.media = [...existingUrls, ...newMediaFiles];
+      }
     } else if (field === 'weight' && typeof value === 'number') {
       updatedData.weight = value;
     } else if (typeof value === 'string') {
@@ -40,19 +67,27 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
       if (field === 'dimension') updatedData.dimension = value;
       if (field === 'description') updatedData.description = value;
       if (field === 'decoration') updatedData.decoration = value;
-      if (field === 'media') updatedData.media = value;
     }
     
     setData(updatedData);
+    onChange(type, updatedData);
+  };
+
+  const removeMedia = (index: number) => {
+    if (!data.media) return;
     
-    // Only pass the StageData compatible fields to parent
-    // If we have a File object, include it in the media field
-    const stageDataToPass: StageData = {
-      ...updatedData,
-      media: field === 'media' && value instanceof File ? value : updatedData.media
-    };
+    const updatedMedia = [...data.media];
+    updatedMedia.splice(index, 1);
     
-    onChange(type, stageDataToPass);
+    // Also remove from mediaFiles if it's a File object
+    const updatedMediaFiles = [...mediaFiles];
+    if (index < mediaFiles.length) {
+      updatedMediaFiles.splice(index, 1);
+      setMediaFiles(updatedMediaFiles);
+    }
+    
+    setData(prev => ({ ...prev, media: updatedMedia }));
+    onChange(type, { ...data, media: updatedMedia });
   };
 
   const stageLabels: Record<StageType, string> = {
@@ -66,6 +101,10 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
     bisque: 'stage-bisque',
     final: 'stage-final',
   };
+
+  // Count current media items
+  const currentMediaCount = Array.isArray(data.media) ? data.media.length : 0;
+  const canAddMoreMedia = currentMediaCount < 15;
 
   return (
     <Card className="w-full mb-6">
@@ -103,27 +142,55 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
 
         <div className="space-y-2">
           <Label htmlFor={`${type}-media`} className="flex items-center gap-1">
-            <Image size={16} /> Photo or Video
+            <Image size={16} /> Photos or Videos ({currentMediaCount}/15)
           </Label>
-          <Input
-            id={`${type}-media`}
-            type="file"
-            accept="image/*,video/*"
-            className="cursor-pointer"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                handleChange('media', e.target.files[0]);
-              }
-            }}
-          />
-          {data.media && (
-            <div className="mt-2 rounded-md overflow-hidden border">
-              {typeof data.media === 'string' && (
-                <img src={data.media} alt="Stage media" className="max-h-40 w-auto mx-auto" />
-              )}
-              {mediaFile && (
-                <div className="bg-muted p-2 text-sm">File selected: {mediaFile.name}</div>
-              )}
+          {canAddMoreMedia ? (
+            <Input
+              id={`${type}-media`}
+              type="file"
+              accept="image/*,video/*"
+              className="cursor-pointer"
+              multiple
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  // Convert FileList to array and limit to remaining slots
+                  const remainingSlots = 15 - currentMediaCount;
+                  const filesToAdd = Array.from(e.target.files).slice(0, remainingSlots);
+                  handleChange('media', filesToAdd);
+                }
+              }}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">Maximum of 15 media files reached</p>
+          )}
+          
+          {data.media && Array.isArray(data.media) && data.media.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {data.media.map((item, index) => (
+                <div key={index} className="relative border rounded-md overflow-hidden group">
+                  {typeof item === 'string' ? (
+                    <img src={item} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
+                  ) : item instanceof File && item.type.startsWith('image/') ? (
+                    <img 
+                      src={URL.createObjectURL(item)} 
+                      alt={`Media ${index + 1}`} 
+                      className="w-full h-32 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-32 bg-muted flex items-center justify-center text-sm">
+                      {item instanceof File ? item.name : 'File'}
+                    </div>
+                  )}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeMedia(index)}
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,7 +9,7 @@ import StageForm from './StageForm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadMedia } from '@/utils/storageUtils';
+import { uploadMultipleMedia } from '@/utils/storageUtils';
 
 interface PotteryFormProps {
   pottery?: PotteryRecord;
@@ -60,13 +59,30 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
       for (const stageType of ['greenware', 'bisque', 'final'] as StageType[]) {
         const stageData = stages[stageType];
         
-        // Check if media is a File object and upload it
-        if (stageData.media instanceof File) {
-          const mediaUrl = await uploadMedia(stageData.media, user.id, `${potteryId}-${stageType}`);
-          if (mediaUrl) {
+        // Check if media exists and has File objects that need to be uploaded
+        if (Array.isArray(stageData.media) && stageData.media.length > 0) {
+          // Filter out File objects that need to be uploaded
+          const filesToUpload = stageData.media.filter(item => item instanceof File) as File[];
+          const existingUrls = stageData.media.filter(item => typeof item === 'string') as string[];
+          
+          if (filesToUpload.length > 0) {
+            // Upload all files
+            const mediaUrls = await uploadMultipleMedia(
+              filesToUpload, 
+              user.id, 
+              `${potteryId}-${stageType}`
+            );
+            
+            // Combine existing URLs with new ones
             updatedStages[stageType] = {
               ...stageData,
-              media: mediaUrl
+              media: [...existingUrls, ...mediaUrls]
+            };
+          } else {
+            // Keep existing media
+            updatedStages[stageType] = {
+              ...stageData,
+              media: existingUrls
             };
           }
         }
@@ -119,7 +135,7 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
         // Prepare stage data for database
         const dbStageData = {
           weight: stageData.weight || null,
-          media_url: typeof stageData.media === 'string' ? stageData.media : null,
+          media_url: Array.isArray(stageData.media) ? JSON.stringify(stageData.media) : null,
           dimension: stageData.dimension || null,
           description: stageData.description || null,
           decoration: stageData.decoration || null,
@@ -136,7 +152,11 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
           if (stageError) {
             throw stageError;
           }
-        } else if (Object.values(stageData).some(value => value !== undefined && value !== '')) {
+        } else if (Object.values(stageData).some(value => {
+          // Check if there is actual data
+          if (Array.isArray(value)) return value.length > 0;
+          return value !== undefined && value !== '';
+        })) {
           // Insert new stage if there's actual data
           const { error: stageError } = await supabase
             .from('pottery_stages')

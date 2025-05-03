@@ -31,3 +31,21 @@ export const uploadMedia = async (file: File, userId: string, fileName: string):
     return null;
   }
 };
+
+// New function to upload multiple media files
+export const uploadMultipleMedia = async (files: File[], userId: string, baseFileName: string): Promise<string[]> => {
+  const uploadPromises = files.map((file, index) => {
+    // Create unique file name by adding an index
+    const uniqueFileName = `${baseFileName}-${index}`;
+    return uploadMedia(file, userId, uniqueFileName);
+  });
+  
+  try {
+    const results = await Promise.all(uploadPromises);
+    // Filter out null values (failed uploads)
+    return results.filter(url => url !== null) as string[];
+  } catch (error) {
+    console.error('Error in uploadMultipleMedia:', error);
+    return [];
+  }
+};

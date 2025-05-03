@@ -4,7 +4,7 @@ export type StageType = 'greenware' | 'bisque' | 'final';
 
 export interface StageData {
   weight?: number;
-  media?: string | File; // Updated to allow both string and File types
+  media?: (string | File)[]; // Updated to support multiple media files as array
   dimension?: string;
   description?: string;
   decoration?: string;
