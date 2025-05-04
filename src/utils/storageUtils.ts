@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { StageType } from "@/types";
+import { StageType, PotteryMedia } from "@/types";
 import { toast } from "sonner";
 
 export const uploadMedia = async (file: File, potteryId: string, stageType: StageType, index: number): Promise<string | null> => {
