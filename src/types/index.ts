@@ -4,7 +4,7 @@ export type StageType = 'greenware' | 'bisque' | 'final';
 
 export interface StageData {
   weight?: number;
-  media?: (string | File)[]; // Updated to support multiple media files as array
+  media?: (string | File)[]; // Supports multiple media files as array
   dimension?: string;
   description?: string;
   decoration?: string;
@@ -21,6 +21,17 @@ export interface PotteryRecord {
     bisque: StageData;
     final: StageData;
   };
+}
+
+// Media related types
+export interface PotteryMedia {
+  id: string;
+  pottery_id: string;
+  stage_type: StageType;
+  media_url: string;
+  media_type: string;
+  uploaded_at: string;
+  sort_order: number;
 }
 
 // User related types

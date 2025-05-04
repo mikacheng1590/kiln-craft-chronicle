@@ -1,12 +1,14 @@
+
 import { useState } from 'react';
 import { StageData, StageType } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Weight, Image, X } from 'lucide-react';
+import { Weight, Image, X, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface StageFormProps {
   type: StageType;
@@ -104,7 +106,7 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
 
   // Count current media items
   const currentMediaCount = Array.isArray(data.media) ? data.media.length : 0;
-  const canAddMoreMedia = currentMediaCount < 15;
+  const canAddMoreMedia = currentMediaCount < 16;
 
   return (
     <Card className="w-full mb-6">
@@ -142,26 +144,36 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
 
         <div className="space-y-2">
           <Label htmlFor={`${type}-media`} className="flex items-center gap-1">
-            <Image size={16} /> Photos or Videos ({currentMediaCount}/15)
+            <Image size={16} /> Photos or Videos ({currentMediaCount}/16)
           </Label>
           {canAddMoreMedia ? (
-            <Input
-              id={`${type}-media`}
-              type="file"
-              accept="image/*,video/*"
-              className="cursor-pointer"
-              multiple
-              onChange={(e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                  // Convert FileList to array and limit to remaining slots
-                  const remainingSlots = 15 - currentMediaCount;
-                  const filesToAdd = Array.from(e.target.files).slice(0, remainingSlots);
-                  handleChange('media', filesToAdd);
-                }
-              }}
-            />
+            <div className="flex flex-col gap-2">
+              <Input
+                id={`${type}-media`}
+                type="file"
+                accept="image/*,video/*"
+                className="cursor-pointer"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    // Convert FileList to array and limit to remaining slots
+                    const remainingSlots = 16 - currentMediaCount;
+                    const filesToAdd = Array.from(e.target.files).slice(0, remainingSlots);
+                    
+                    if (currentMediaCount + filesToAdd.length > 16) {
+                      toast.warning(`You can only upload up to 16 media files per stage. Only the first ${remainingSlots} files will be added.`);
+                    }
+                    
+                    handleChange('media', filesToAdd);
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                You can upload up to 16 photos or videos per stage
+              </p>
+            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Maximum of 15 media files reached</p>
+            <p className="text-sm text-muted-foreground">Maximum of 16 media files reached</p>
           )}
           
           {data.media && Array.isArray(data.media) && data.media.length > 0 && (
@@ -175,6 +187,12 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
                       src={URL.createObjectURL(item)} 
                       alt={`Media ${index + 1}`} 
                       className="w-full h-32 object-cover"
+                    />
+                  ) : item instanceof File && item.type.startsWith('video/') ? (
+                    <video 
+                      src={URL.createObjectURL(item)} 
+                      className="w-full h-32 object-cover"
+                      controls={false}
                     />
                   ) : (
                     <div className="w-full h-32 bg-muted flex items-center justify-center text-sm">

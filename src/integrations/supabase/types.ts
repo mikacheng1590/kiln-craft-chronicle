@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      pottery_media: {
+        Row: {
+          id: string
+          media_type: string
+          media_url: string
+          pottery_id: string
+          sort_order: number
+          stage_type: string
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          media_type?: string
+          media_url: string
+          pottery_id: string
+          sort_order?: number
+          stage_type: string
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          media_type?: string
+          media_url?: string
+          pottery_id?: string
+          sort_order?: number
+          stage_type?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pottery_media_pottery_id_fkey"
+            columns: ["pottery_id"]
+            isOneToOne: false
+            referencedRelation: "pottery_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pottery_records: {
         Row: {
           created_at: string | null

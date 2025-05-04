@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PotteryRecord, StageType } from '@/types';
+import { PotteryRecord, StageType, PotteryMedia } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { fetchPotteryMedia } from '@/utils/storageUtils';
 
 const ViewPottery = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,11 @@ const ViewPottery = () => {
   const { user } = useAuth();
   const [pottery, setPottery] = useState<PotteryRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mediaByStage, setMediaByStage] = useState<Record<StageType, PotteryMedia[]>>({
+    greenware: [],
+    bisque: [],
+    final: []
+  });
   
   useEffect(() => {
     const fetchPottery = async () => {
@@ -81,6 +87,18 @@ const ViewPottery = () => {
           };
         });
         
+        // Fetch media from the pottery_media table
+        const allMedia = await fetchPotteryMedia(id);
+        
+        // Organize media by stage type
+        const mediaMap = {
+          greenware: allMedia.filter(m => m.stage_type === 'greenware'),
+          bisque: allMedia.filter(m => m.stage_type === 'bisque'),
+          final: allMedia.filter(m => m.stage_type === 'final')
+        };
+        
+        setMediaByStage(mediaMap);
+        
         setPottery({
           id: record.id,
           title: record.title,
@@ -126,7 +144,14 @@ const ViewPottery = () => {
   };
 
   // Helper function to get media URLs array
-  const getMediaUrls = (stageData: any): string[] => {
+  const getMediaUrls = (stageType: StageType): string[] => {
+    // First try to get from the new pottery_media table
+    if (mediaByStage[stageType].length > 0) {
+      return mediaByStage[stageType].map(m => m.media_url);
+    }
+    
+    // Fallback to the stage data's media field
+    const stageData = stages[stageType];
     if (!stageData.media) return [];
     
     if (Array.isArray(stageData.media)) {
@@ -170,7 +195,7 @@ const ViewPottery = () => {
           {(Object.keys(stages) as StageType[]).map((stageType) => {
             const stageData = stages[stageType];
             const hasData = Object.values(stageData || {}).some(Boolean);
-            const mediaUrls = getMediaUrls(stageData);
+            const mediaUrls = getMediaUrls(stageType);
             
             return (
               <TabsContent key={stageType} value={stageType} className="mt-0">
@@ -192,11 +217,19 @@ const ViewPottery = () => {
                                 {mediaUrls.map((url, idx) => (
                                   <CarouselItem key={idx}>
                                     <div className="p-1">
-                                      <img 
-                                        src={url} 
-                                        alt={`${title} - ${stageLabels[stageType]} (${idx + 1}/${mediaUrls.length})`}
-                                        className="rounded-md max-h-80 w-auto mx-auto object-contain"
-                                      />
+                                      {url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') ? (
+                                        <video 
+                                          src={url} 
+                                          controls 
+                                          className="rounded-md max-h-80 w-auto mx-auto object-contain"
+                                        />
+                                      ) : (
+                                        <img 
+                                          src={url} 
+                                          alt={`${title} - ${stageLabels[stageType]} (${idx + 1}/${mediaUrls.length})`}
+                                          className="rounded-md max-h-80 w-auto mx-auto object-contain"
+                                        />
+                                      )}
                                     </div>
                                   </CarouselItem>
                                 ))}
@@ -209,7 +242,7 @@ const ViewPottery = () => {
                               )}
                             </Carousel>
                             <div className="text-center text-sm text-muted-foreground mt-1">
-                              {mediaUrls.length} {mediaUrls.length === 1 ? 'image' : 'images'}
+                              {mediaUrls.length} {mediaUrls.length === 1 ? 'media file' : 'media files'}
                             </div>
                           </div>
                         )}

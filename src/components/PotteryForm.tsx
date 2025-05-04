@@ -69,8 +69,8 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
             // Upload all files
             const mediaUrls = await uploadMultipleMedia(
               filesToUpload, 
-              user.id, 
-              `${potteryId}-${stageType}`
+              potteryId,
+              stageType
             );
             
             // Combine existing URLs with new ones
