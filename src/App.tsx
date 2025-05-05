@@ -10,7 +10,6 @@ import Dashboard from "./pages/Dashboard";
 import CreatePottery from "./pages/CreatePottery";
 import ViewPottery from "./pages/ViewPottery";
 import EditPottery from "./pages/EditPottery";
-import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -29,7 +28,6 @@ const App = () => (
             <Route path="/create" element={<ProtectedRoute><CreatePottery /></ProtectedRoute>} />
             <Route path="/pottery/:id" element={<ProtectedRoute><ViewPottery /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditPottery /></ProtectedRoute>} />
-            <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

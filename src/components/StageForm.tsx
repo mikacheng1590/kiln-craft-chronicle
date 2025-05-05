@@ -194,28 +194,29 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor={`${type}-weight`} className="flex items-center gap-1">
-              <Weight size={16} /> Weight (g)
-            </Label>
-            <Input
-              id={`${type}-weight`}
-              type="number"
-              placeholder="Weight in grams"
-              value={data.weight || ''}
-              onChange={(e) => handleChange('weight', Number(e.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${type}-dimension`}>Dimensions</Label>
-            <Input
-              id={`${type}-dimension`}
-              placeholder="e.g. 10cm x 8cm"
-              value={data.dimension || ''}
-              onChange={(e) => handleChange('dimension', e.target.value)}
-            />
-          </div>
+          
+        <div className="space-y-2">
+          <Label htmlFor={`${type}-dimension`}>Dimensions</Label>
+          <Textarea
+            id={`${type}-dimension`}
+            placeholder="e.g. 10cm x 8cm"
+            value={data.dimension || ''}
+            onChange={(e) => handleChange('dimension', e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor={`${type}-weight`} className="flex items-center gap-1">
+            <Weight size={16} /> Weight (lbs)
+          </Label>
+          <Input
+            id={`${type}-weight`}
+            type="number"
+            placeholder="Weight in lbs"
+            value={data.weight || ''}
+            onChange={(e) => handleChange('weight', Number(e.target.value))}
+          />
         </div>
 
         <div className="space-y-2">
@@ -342,7 +343,7 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
           <Label htmlFor={`${type}-description`}>Description</Label>
           <Textarea
             id={`${type}-description`}
-            placeholder="Describe this stage..."
+            placeholder="Describe this stage / any notes..."
             value={data.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
             rows={3}
@@ -351,9 +352,9 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
 
         <div className="space-y-2">
           <Label htmlFor={`${type}-decoration`}>Decoration</Label>
-          <Input
+          <Textarea
             id={`${type}-decoration`}
-            placeholder={type === 'greenware' ? "underglaze, handle, slip, etc." : "glazes, underglaze, etc."}
+            placeholder={type === 'greenware' ? "Underglaze, handle, slip, etc." : type === 'bisque' ? "Glazes, underglaze, etc." : "Decoration, etc."}
             value={data.decoration || ''}
             onChange={(e) => handleChange('decoration', e.target.value)}
           />

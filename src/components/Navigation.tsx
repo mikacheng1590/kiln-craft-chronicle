@@ -19,22 +19,10 @@ const Navigation = () => {
       active: location.pathname === '/dashboard' || location.pathname === '/',
     },
     {
-      icon: Search,
-      label: 'Search',
-      path: '/search',
-      active: location.pathname === '/search',
-    },
-    {
       icon: PlusCircle,
       label: 'Create',
       path: '/create',
       active: location.pathname === '/create',
-    },
-    {
-      icon: User,
-      label: 'Profile',
-      path: user ? '/profile' : '/',
-      active: location.pathname === '/profile' || location.pathname === '/',
     },
   ];
 
