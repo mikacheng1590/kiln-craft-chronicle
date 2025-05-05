@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { fetchPotteryMedia } from '@/utils/storageUtils';
 
 const ViewPottery = () => {
@@ -24,6 +24,8 @@ const ViewPottery = () => {
     bisque: [],
     final: []
   });
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
   
   useEffect(() => {
     const fetchPottery = async () => {
@@ -104,6 +106,16 @@ const ViewPottery = () => {
     
     fetchPottery();
   }, [id, navigate, user]);
+
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   if (isLoading) {
     return null;
@@ -214,7 +226,7 @@ const ViewPottery = () => {
                       <>
                         {mediaUrls.length > 0 && (
                           <div className="rounded-md overflow-hidden mb-4">
-                            <Carousel className="w-full">
+                            <Carousel setApi={setApi} className="w-full">
                               <CarouselContent>
                                 {mediaUrls.map((url, idx) => (
                                   <CarouselItem key={idx}>
@@ -244,7 +256,7 @@ const ViewPottery = () => {
                               )}
                             </Carousel>
                             <div className="text-center text-sm text-muted-foreground mt-1">
-                              {mediaUrls.length} {mediaUrls.length === 1 ? 'media file' : 'media files'}
+                              {current + 1}/{mediaUrls.length}
                             </div>
                           </div>
                         )}
