@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -136,7 +135,6 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
         // Prepare stage data for database
         const dbStageData = {
           weight: stageData.weight || null,
-          media_url: Array.isArray(stageData.media) ? JSON.stringify(stageData.media) : null,
           dimension: stageData.dimension || null,
           description: stageData.description || null,
           decoration: stageData.decoration || null,

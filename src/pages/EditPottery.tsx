@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PotteryRecord, StageType } from '@/types';
@@ -54,7 +53,6 @@ const EditPottery = () => {
         stagesData.forEach(stage => {
           formattedStages[stage.stage_type as StageType] = {
             weight: stage.weight,
-            media: stage.media_url,
             dimension: stage.dimension,
             description: stage.description,
             decoration: stage.decoration

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PotteryRecord, StageType, PotteryMedia } from '@/types';
@@ -65,22 +64,8 @@ const ViewPottery = () => {
         };
         
         stagesData.forEach(stage => {
-          let mediaUrls = [];
-          try {
-            // Try to parse JSON string for media URLs
-            if (stage.media_url) {
-              mediaUrls = JSON.parse(stage.media_url);
-            }
-          } catch (e) {
-            // If not valid JSON, treat as single URL
-            if (stage.media_url) {
-              mediaUrls = [stage.media_url];
-            }
-          }
-          
           formattedStages[stage.stage_type as StageType] = {
             weight: stage.weight,
-            media: mediaUrls,
             dimension: stage.dimension,
             description: stage.description,
             decoration: stage.decoration
@@ -145,14 +130,22 @@ const ViewPottery = () => {
   };
 
   // Helper function to check if a URL is likely to be a video
-  const isVideoUrl = (url: string, stageType: StageType): boolean => {
+  const isVideoUrl = (url: string): boolean => {
     // Check by extension
     const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
     const isVideoExt = videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
     
     // Check by media type in our mediaByStage data
-    const mediaItem = mediaByStage[stageType].find(m => m.media_url === url);
-    const isVideoType = mediaItem?.media_type === 'video';
+    const stageTypes: StageType[] = ['greenware', 'bisque', 'final'];
+    let isVideoType = false;
+    
+    for (const stageType of stageTypes) {
+      const mediaItem = mediaByStage[stageType].find(m => m.media_url === url);
+      if (mediaItem && mediaItem.media_type === 'video') {
+        isVideoType = true;
+        break;
+      }
+    }
     
     // Check by URL content
     const containsVideoHint = url.includes('video');
@@ -160,22 +153,14 @@ const ViewPottery = () => {
     return isVideoExt || isVideoType || containsVideoHint;
   };
 
-  // Helper function to get media URLs array
+  // Helper function to get media URLs array for a stage
   const getMediaUrls = (stageType: StageType): string[] => {
-    // First try to get from the new pottery_media table
+    // Get from the pottery_media table
     if (mediaByStage[stageType].length > 0) {
       return mediaByStage[stageType].map(m => m.media_url);
     }
     
-    // Fallback to the stage data's media field
-    const stageData = stages[stageType];
-    if (!stageData.media) return [];
-    
-    if (Array.isArray(stageData.media)) {
-      return stageData.media.filter(item => typeof item === 'string') as string[];
-    }
-    
-    return typeof stageData.media === 'string' ? [stageData.media] : [];
+    return [];
   };
 
   return (
@@ -234,7 +219,7 @@ const ViewPottery = () => {
                                 {mediaUrls.map((url, idx) => (
                                   <CarouselItem key={idx}>
                                     <div className="p-1">
-                                      {isVideoUrl(url, stageType) ? (
+                                      {isVideoUrl(url) ? (
                                         <video 
                                           src={url} 
                                           controls 
