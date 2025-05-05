@@ -30,12 +30,6 @@ const Navigation = () => {
       path: '/create',
       active: location.pathname === '/create',
     },
-    {
-      icon: User,
-      label: 'Profile',
-      path: user ? '/profile' : '/',
-      active: location.pathname === '/profile' || location.pathname === '/',
-    },
   ];
 
   const handleSignOut = async () => {
