@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PotteryRecord, StageType } from '@/types';
@@ -10,6 +9,7 @@ import { PlusCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { fetchPotteryMedia, deleteMedia } from '@/utils/storageUtils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -111,6 +111,20 @@ const Dashboard = () => {
   
   const handleDelete = async (id: string) => {
     try {
+      // First, fetch all media files associated with this pottery record
+      const mediaFiles = await fetchPotteryMedia(id);
+
+      // Delete all media files
+      if (mediaFiles.length > 0) {
+        const deletePromises = mediaFiles.map(media => deleteMedia(media.media_url));
+        const results = await Promise.all(deletePromises);
+        
+        if (results.some(result => !result)) {
+          throw new Error('Failed to delete some media files');
+        }
+      }
+
+      // Delete pottery record
       const { error } = await supabase
         .from('pottery_records')
         .delete()
