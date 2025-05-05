@@ -1,22 +1,24 @@
 
-import { useState } from 'react';
-import { StageData, StageType } from '@/types';
+import { useState, useEffect } from 'react';
+import { StageData, StageType, PotteryMedia } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Weight, Image, X, Upload } from 'lucide-react';
+import { Weight, Image, X, Trash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { fetchPotteryMedia, deleteMedia } from '@/utils/storageUtils';
 
 interface StageFormProps {
   type: StageType;
   stageData: StageData;
   onChange: (type: StageType, data: StageData) => void;
+  potteryId?: string; // Add pottery ID for editing existing records
 }
 
-const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
+const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => {
   const [data, setData] = useState<StageData>({
     weight: stageData?.weight,
     media: stageData?.media || [],
@@ -27,6 +29,34 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
   
   // Keep track of files selected by the user for preview
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [isDeleting, setIsDeleting] = useState<Record<string, boolean>>({});
+  
+  // Fetch existing media when editing a pottery record
+  useEffect(() => {
+    const loadExistingMedia = async () => {
+      if (potteryId) {
+        const media = await fetchPotteryMedia(potteryId, type);
+        
+        if (media.length > 0) {
+          // Update local state with fetched media URLs
+          const mediaUrls = media.map(m => m.media_url);
+          
+          setData(prev => ({
+            ...prev,
+            media: mediaUrls
+          }));
+          
+          // Update parent component
+          onChange(type, {
+            ...data,
+            media: mediaUrls
+          });
+        }
+      }
+    };
+    
+    loadExistingMedia();
+  }, [potteryId, type]);
   
   const handleChange = (field: keyof StageData, value: string | number | File | File[]) => {
     const updatedData = { ...data };
@@ -75,10 +105,35 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
     onChange(type, updatedData);
   };
 
-  const removeMedia = (index: number) => {
+  const removeMedia = async (index: number) => {
     if (!data.media) return;
     
     const updatedMedia = [...data.media];
+    const mediaItem = updatedMedia[index];
+    
+    // If it's an uploaded media URL, delete it from storage and DB
+    if (typeof mediaItem === 'string' && potteryId) {
+      setIsDeleting({...isDeleting, [mediaItem]: true});
+      
+      try {
+        const success = await deleteMedia(mediaItem, potteryId);
+        
+        if (!success) {
+          toast.error('Failed to delete media file');
+          setIsDeleting({...isDeleting, [mediaItem]: false});
+          return;
+        }
+        
+        toast.success('Media deleted successfully');
+      } catch (error) {
+        console.error('Error deleting media:', error);
+        toast.error('Failed to delete media file');
+        setIsDeleting({...isDeleting, [mediaItem]: false});
+        return;
+      }
+    }
+    
+    // Remove from local arrays
     updatedMedia.splice(index, 1);
     
     // Also remove from mediaFiles if it's a File object
@@ -90,6 +145,10 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
     
     setData(prev => ({ ...prev, media: updatedMedia }));
     onChange(type, { ...data, media: updatedMedia });
+    
+    if (typeof mediaItem === 'string') {
+      setIsDeleting({...isDeleting, [mediaItem]: false});
+    }
   };
 
   const stageLabels: Record<StageType, string> = {
@@ -181,32 +240,83 @@ const StageForm = ({ type, stageData, onChange }: StageFormProps) => {
               {data.media.map((item, index) => (
                 <div key={index} className="relative border rounded-md overflow-hidden group">
                   {typeof item === 'string' ? (
-                    <img src={item} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
+                    <div className="relative">
+                      {item.toLowerCase().endsWith('.mp4') || 
+                       item.toLowerCase().endsWith('.webm') || 
+                       item.toLowerCase().endsWith('.mov') ? (
+                        <video 
+                          src={item} 
+                          className="w-full h-32 object-cover"
+                          controls={false}
+                        />
+                      ) : (
+                        <img src={item} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => removeMedia(index)}
+                          disabled={isDeleting[item]}
+                        >
+                          {isDeleting[item] ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <Trash size={16} />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   ) : item instanceof File && item.type.startsWith('image/') ? (
-                    <img 
-                      src={URL.createObjectURL(item)} 
-                      alt={`Media ${index + 1}`} 
-                      className="w-full h-32 object-cover"
-                    />
+                    <div className="relative">
+                      <img 
+                        src={URL.createObjectURL(item)} 
+                        alt={`Media ${index + 1}`} 
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => removeMedia(index)}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    </div>
                   ) : item instanceof File && item.type.startsWith('video/') ? (
-                    <video 
-                      src={URL.createObjectURL(item)} 
-                      className="w-full h-32 object-cover"
-                      controls={false}
-                    />
+                    <div className="relative">
+                      <video 
+                        src={URL.createObjectURL(item)} 
+                        className="w-full h-32 object-cover"
+                        controls={false}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => removeMedia(index)}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full h-32 bg-muted flex items-center justify-center text-sm">
                       {item instanceof File ? item.name : 'File'}
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeMedia(index)}
+                      >
+                        <X size={14} />
+                      </Button>
                     </div>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeMedia(index)}
-                  >
-                    <X size={14} />
-                  </Button>
                 </div>
               ))}
             </div>

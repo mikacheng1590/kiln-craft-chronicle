@@ -86,7 +86,7 @@ export const fetchPotteryMedia = async (potteryId: string, stageType?: StageType
       return [];
     }
     
-    return data || [];
+    return data as PotteryMedia[];
   } catch (error) {
     console.error('Error in fetchPotteryMedia:', error);
     return [];

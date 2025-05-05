@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -206,18 +207,21 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
           type="greenware" 
           stageData={stages.greenware}
           onChange={handleStageChange}
+          potteryId={pottery?.id}
         />
         
         <StageForm 
           type="bisque" 
           stageData={stages.bisque}
           onChange={handleStageChange}
+          potteryId={pottery?.id}
         />
         
         <StageForm 
           type="final" 
           stageData={stages.final}
           onChange={handleStageChange}
+          potteryId={pottery?.id}
         />
       </div>
       
