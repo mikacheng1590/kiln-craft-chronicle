@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { StageType, PotteryMedia } from "@/types";
 
+const bucketName = 'pottery-media';
+
 export const uploadMedia = async (file: File, potteryId: string, stageType: StageType, index: number): Promise<string | null> => {
   try {
     // First verify if the user owns this pottery record
@@ -25,7 +27,7 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
     const filePath = `${potteryId}-${stageType}-${uniqueId}.${fileExt}`;
 
     const { error: uploadError, data } = await supabase.storage
-      .from('pottery-media')
+      .from(bucketName)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -37,9 +39,7 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
       return null;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('pottery-media')
-      .getPublicUrl(filePath);
+    const publicUrl = `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${data?.fullPath}`;
 
     // Insert record into pottery_media table
     const { error: dbError } = await supabase
@@ -118,7 +118,7 @@ export const deleteMedia = async (mediaUrl: string, potteryId: string): Promise<
     
     // Delete from storage
     const { error: storageError } = await supabase.storage
-      .from('pottery-media')
+      .from(bucketName)
       .remove([filename]);
     
     if (storageError) {
