@@ -89,6 +89,7 @@ const ViewPottery = () => {
         
         // Fetch media from the pottery_media table
         const allMedia = await fetchPotteryMedia(id);
+        console.log('Fetched media for view:', allMedia);
         
         // Organize media by stage type
         const mediaMap = {
@@ -141,6 +142,22 @@ const ViewPottery = () => {
     greenware: 'stage-greenware',
     bisque: 'stage-bisque',
     final: 'stage-final',
+  };
+
+  // Helper function to check if a URL is likely to be a video
+  const isVideoUrl = (url: string, stageType: StageType): boolean => {
+    // Check by extension
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+    const isVideoExt = videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+    
+    // Check by media type in our mediaByStage data
+    const mediaItem = mediaByStage[stageType].find(m => m.media_url === url);
+    const isVideoType = mediaItem?.media_type === 'video';
+    
+    // Check by URL content
+    const containsVideoHint = url.includes('video');
+    
+    return isVideoExt || isVideoType || containsVideoHint;
   };
 
   // Helper function to get media URLs array
@@ -217,7 +234,7 @@ const ViewPottery = () => {
                                 {mediaUrls.map((url, idx) => (
                                   <CarouselItem key={idx}>
                                     <div className="p-1">
-                                      {url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') ? (
+                                      {isVideoUrl(url, stageType) ? (
                                         <video 
                                           src={url} 
                                           controls 

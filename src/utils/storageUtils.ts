@@ -5,6 +5,19 @@ import { toast } from "sonner";
 
 export const uploadMedia = async (file: File, potteryId: string, stageType: StageType, index: number): Promise<string | null> => {
   try {
+    // First verify if the user owns this pottery record
+    const { data: potteryData, error: potteryError } = await supabase
+      .from('pottery_records')
+      .select('id, user_id')
+      .eq('id', potteryId)
+      .single();
+    
+    if (potteryError || !potteryData) {
+      console.error('Error verifying pottery ownership:', potteryError);
+      toast.error('Failed to verify pottery ownership');
+      return null;
+    }
+    
     const fileExt = file.name.split('.').pop();
     // Store at root level with pottery ID and stage type in filename
     const filePath = `${potteryId}-${stageType}-${index}.${fileExt}`;
@@ -39,7 +52,8 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
 
     if (dbError) {
       console.error('Error saving media record:', dbError);
-      // Don't stop the process, we at least have the file uploaded
+      toast.error('Failed to save media record: ' + dbError.message);
+      return null;
     }
 
     return publicUrl;

@@ -30,12 +30,17 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
   // Keep track of files selected by the user for preview
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isDeleting, setIsDeleting] = useState<Record<string, boolean>>({});
+  const [existingMedia, setExistingMedia] = useState<PotteryMedia[]>([]);
   
   // Fetch existing media when editing a pottery record
   useEffect(() => {
     const loadExistingMedia = async () => {
       if (potteryId) {
+        console.log(`Fetching media for pottery ID: ${potteryId}, stage: ${type}`);
         const media = await fetchPotteryMedia(potteryId, type);
+        console.log(`Fetched media:`, media);
+        
+        setExistingMedia(media);
         
         if (media.length > 0) {
           // Update local state with fetched media URLs
@@ -143,12 +148,24 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
       setMediaFiles(updatedMediaFiles);
     }
     
+    // Remove from existingMedia if applicable
+    if (typeof mediaItem === 'string') {
+      setExistingMedia(existingMedia.filter(m => m.media_url !== mediaItem));
+    }
+    
     setData(prev => ({ ...prev, media: updatedMedia }));
     onChange(type, { ...data, media: updatedMedia });
     
     if (typeof mediaItem === 'string') {
       setIsDeleting({...isDeleting, [mediaItem]: false});
     }
+  };
+
+  // Helper function to check if a URL is a video
+  const isVideoUrl = (url: string): boolean => {
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) ||
+           url.includes('video') || existingMedia.some(m => m.media_url === url && m.media_type === 'video');
   };
 
   const stageLabels: Record<StageType, string> = {
@@ -241,13 +258,11 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
                 <div key={index} className="relative border rounded-md overflow-hidden group">
                   {typeof item === 'string' ? (
                     <div className="relative">
-                      {item.toLowerCase().endsWith('.mp4') || 
-                       item.toLowerCase().endsWith('.webm') || 
-                       item.toLowerCase().endsWith('.mov') ? (
+                      {isVideoUrl(item) ? (
                         <video 
                           src={item} 
                           className="w-full h-32 object-cover"
-                          controls={false}
+                          controls
                         />
                       ) : (
                         <img src={item} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
@@ -291,7 +306,7 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
                       <video 
                         src={URL.createObjectURL(item)} 
                         className="w-full h-32 object-cover"
-                        controls={false}
+                        controls
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
