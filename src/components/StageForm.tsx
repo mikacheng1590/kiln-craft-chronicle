@@ -343,7 +343,7 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
           <Label htmlFor={`${type}-description`}>Description</Label>
           <Textarea
             id={`${type}-description`}
-            placeholder="Describe this stage..."
+            placeholder="Describe this stage / any notes..."
             value={data.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
             rows={3}
@@ -354,7 +354,7 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
           <Label htmlFor={`${type}-decoration`}>Decoration</Label>
           <Textarea
             id={`${type}-decoration`}
-            placeholder={type === 'greenware' ? "underglaze, handle, slip, etc." : "glazes, underglaze, etc."}
+            placeholder={type === 'greenware' ? "Underglaze, handle, slip, etc." : type === 'bisque' ? "Glazes, underglaze, etc." : "Decoration, etc."}
             value={data.decoration || ''}
             onChange={(e) => handleChange('decoration', e.target.value)}
           />
