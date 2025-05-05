@@ -210,7 +210,7 @@ const ViewPottery = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {hasData ? (
+                    {hasData || mediaUrls.length > 0 ? (
                       <>
                         {mediaUrls.length > 0 && (
                           <div className="rounded-md overflow-hidden mb-4">
