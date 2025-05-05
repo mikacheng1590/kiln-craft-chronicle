@@ -52,7 +52,6 @@ const Search = () => {
             stagesData.forEach(stage => {
               formattedStages[stage.stage_type as StageType] = {
                 weight: stage.weight,
-                media: stage.media_url,
                 dimension: stage.dimension,
                 description: stage.description,
                 decoration: stage.decoration
