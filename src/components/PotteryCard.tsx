@@ -1,11 +1,13 @@
 
 import { useNavigate } from 'react-router-dom';
-import { PotteryRecord } from '@/types';
+import { useEffect, useState } from 'react';
+import { PotteryRecord, PotteryMedia } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fetchPotteryMedia } from '@/utils/storageUtils';
 
 interface PotteryCardProps {
   pottery: PotteryRecord;
@@ -15,6 +17,16 @@ interface PotteryCardProps {
 const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
   const navigate = useNavigate();
   const { id, title, stages, createdAt } = pottery;
+  const [mediaList, setMediaList] = useState<PotteryMedia[]>([]);
+  
+  useEffect(() => {
+    const loadMedia = async () => {
+      const media = await fetchPotteryMedia(id);
+      setMediaList(media);
+    };
+    
+    loadMedia();
+  }, [id]);
   
   // Get the most complete stage (the one with the most filled fields)
   const getCompletedStages = () => {
@@ -29,25 +41,28 @@ const PotteryCard = ({ pottery, onDelete }: PotteryCardProps) => {
   
   // Get the featured image (first available image from final, then bisque, then greenware)
   const getFeaturedImage = (): string | null => {
+    if (mediaList.length === 0) return null;
+    
     // Try to get the first image from the final stage
-    if (Array.isArray(stages.final?.media) && stages.final.media.length > 0) {
-      const firstMedia = stages.final.media[0];
-      if (typeof firstMedia === 'string') return firstMedia;
-    }
+    const finalMedia = mediaList.find(media => 
+      media.stage_type === 'final' && media.media_type === 'image'
+    );
+    if (finalMedia) return finalMedia.media_url;
     
     // Then try bisque stage
-    if (Array.isArray(stages.bisque?.media) && stages.bisque.media.length > 0) {
-      const firstMedia = stages.bisque.media[0];
-      if (typeof firstMedia === 'string') return firstMedia;
-    }
+    const bisqueMedia = mediaList.find(media => 
+      media.stage_type === 'bisque' && media.media_type === 'image'
+    );
+    if (bisqueMedia) return bisqueMedia.media_url;
     
     // Then try greenware stage
-    if (Array.isArray(stages.greenware?.media) && stages.greenware.media.length > 0) {
-      const firstMedia = stages.greenware.media[0];
-      if (typeof firstMedia === 'string') return firstMedia;
-    }
+    const greenwareMedia = mediaList.find(media => 
+      media.stage_type === 'greenware' && media.media_type === 'image'
+    );
+    if (greenwareMedia) return greenwareMedia.media_url;
     
-    return null;
+    // If no images found, return the first media URL of any type
+    return mediaList[0].media_url;
   };
   
   const featuredImage = getFeaturedImage();

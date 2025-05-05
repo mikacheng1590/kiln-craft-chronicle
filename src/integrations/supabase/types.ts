@@ -78,7 +78,6 @@ export type Database = {
           description: string | null
           dimension: string | null
           id: string
-          media_url: string | null
           pottery_id: string
           stage_type: string
           updated_at: string | null
@@ -90,7 +89,6 @@ export type Database = {
           description?: string | null
           dimension?: string | null
           id?: string
-          media_url?: string | null
           pottery_id: string
           stage_type: string
           updated_at?: string | null
@@ -102,7 +100,6 @@ export type Database = {
           description?: string | null
           dimension?: string | null
           id?: string
-          media_url?: string | null
           pottery_id?: string
           stage_type?: string
           updated_at?: string | null
