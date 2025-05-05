@@ -1,7 +1,8 @@
 
+import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { StageType, PotteryMedia } from "@/types";
-import { toast } from "sonner";
 
 export const uploadMedia = async (file: File, potteryId: string, stageType: StageType, index: number): Promise<string | null> => {
   try {
@@ -19,8 +20,9 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
     }
     
     const fileExt = file.name.split('.').pop();
+    const uniqueId = uuidv4().split('-')[0];
     // Store at root level with pottery ID and stage type in filename
-    const filePath = `${potteryId}-${stageType}-${index}.${fileExt}`;
+    const filePath = `${potteryId}-${stageType}-${uniqueId}.${fileExt}`;
 
     const { error: uploadError, data } = await supabase.storage
       .from('pottery-media')
