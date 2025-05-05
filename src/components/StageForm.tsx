@@ -121,7 +121,7 @@ const StageForm = ({ type, stageData, onChange, potteryId }: StageFormProps) => 
       setIsDeleting({...isDeleting, [mediaItem]: true});
       
       try {
-        const success = await deleteMedia(mediaItem, potteryId);
+        const success = await deleteMedia(mediaItem);
         
         if (!success) {
           toast.error('Failed to delete media file');

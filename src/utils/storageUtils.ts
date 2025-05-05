@@ -110,7 +110,7 @@ export const fetchPotteryMedia = async (potteryId: string, stageType?: StageType
 };
 
 // Delete media
-export const deleteMedia = async (mediaUrl: string, potteryId: string): Promise<boolean> => {
+export const deleteMedia = async (mediaUrl: string): Promise<boolean> => {
   try {
     // Extract file path from the URL
     const urlParts = mediaUrl.split('/');
