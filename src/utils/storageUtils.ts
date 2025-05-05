@@ -1,7 +1,10 @@
 
+import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { StageType, PotteryMedia } from "@/types";
-import { toast } from "sonner";
+
+const bucketName = 'pottery-media';
 
 export const uploadMedia = async (file: File, potteryId: string, stageType: StageType, index: number): Promise<string | null> => {
   try {
@@ -19,11 +22,12 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
     }
     
     const fileExt = file.name.split('.').pop();
+    const uniqueId = uuidv4().split('-')[0];
     // Store at root level with pottery ID and stage type in filename
-    const filePath = `${potteryId}-${stageType}-${index}.${fileExt}`;
+    const filePath = `${potteryId}-${stageType}-${uniqueId}.${fileExt}`;
 
     const { error: uploadError, data } = await supabase.storage
-      .from('pottery-media')
+      .from(bucketName)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -35,9 +39,7 @@ export const uploadMedia = async (file: File, potteryId: string, stageType: Stag
       return null;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('pottery-media')
-      .getPublicUrl(filePath);
+    const publicUrl = `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${data?.fullPath}`;
 
     // Insert record into pottery_media table
     const { error: dbError } = await supabase
@@ -116,7 +118,7 @@ export const deleteMedia = async (mediaUrl: string, potteryId: string): Promise<
     
     // Delete from storage
     const { error: storageError } = await supabase.storage
-      .from('pottery-media')
+      .from(bucketName)
       .remove([filename]);
     
     if (storageError) {
