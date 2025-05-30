@@ -51,11 +51,44 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
     setIsSubmitting(true);
     
     try {
-      const potteryId = pottery?.id || uuidv4();
+      let potteryId = pottery?.id || null;
       
       // Process any file uploads and get public URLs
       const updatedStages = { ...stages };
-      
+
+      // Save pottery record to Supabase
+      if (isEditing && pottery) {
+        // Update existing pottery record
+        const { error: recordError } = await supabase
+          .from('pottery_records')
+          .update({
+            title,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', potteryId);
+
+        if (recordError) {
+          throw recordError;
+        }
+      } else {
+        // Insert new pottery record
+        const { error: recordError, data: recordData } = await supabase
+          .from('pottery_records')
+          .insert({
+            // id: potteryId,
+            user_id: user.id,
+            title
+          })
+          .select('id')
+          .single();
+
+        potteryId = potteryId === null ? recordData.id : potteryId;
+
+        if (recordError) {
+          throw recordError;
+        }
+      }
+
       for (const stageType of ['greenware', 'bisque', 'final'] as StageType[]) {
         const stageData = stages[stageType];
         
@@ -85,35 +118,6 @@ const PotteryForm = ({ pottery, isEditing = false }: PotteryFormProps) => {
               media: existingUrls
             };
           }
-        }
-      }
-
-      // Save pottery record to Supabase
-      if (isEditing && pottery) {
-        // Update existing pottery record
-        const { error: recordError } = await supabase
-          .from('pottery_records')
-          .update({
-            title,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', potteryId);
-
-        if (recordError) {
-          throw recordError;
-        }
-      } else {
-        // Insert new pottery record
-        const { error: recordError } = await supabase
-          .from('pottery_records')
-          .insert({
-            id: potteryId,
-            user_id: user.id,
-            title
-          });
-
-        if (recordError) {
-          throw recordError;
         }
       }
 

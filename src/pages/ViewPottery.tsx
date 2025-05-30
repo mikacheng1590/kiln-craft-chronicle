@@ -267,7 +267,7 @@ const ViewPottery = () => {
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Weight size={16} /> Weight
                               </p>
-                              <p>{stageData.weight}g</p>
+                              <p>{stageData.weight}lbs</p>
                             </div>
                           )}
                           
